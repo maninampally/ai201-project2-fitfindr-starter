@@ -153,6 +153,20 @@ suggest_outfit(item, empty_wardrobe) → general advice string (non-empty)
 
 ---
 
+## Stretch Feature: Retry Logic with Fallback
+
+If `search_listings` returns no results **and** a size filter was applied, the agent automatically retries with the size filter removed. The user sees a banner in panel 1 explaining what was adjusted: `"No results found in size XXS — showing all sizes instead."` The agent then continues normally to `suggest_outfit` and `create_fit_card` with the loosened results.
+
+If no size was set, or if the retry also returns nothing, the agent sets an error and exits early as usual.
+
+**Trigger to test:**
+```
+vintage graphic tee size XXS
+```
+Panel 1 will show the retry banner + a result. Panels 2 and 3 still fill normally.
+
+---
+
 ## Spec Reflection
 
 **One way the spec helped:** Defining the exact failure mode behavior before implementation — specifically "return `[]`, never raise" for `search_listings` and "return error string, never raise" for `create_fit_card` — made the error handling code straightforward to write. Having the contract written down meant I knew exactly what to test.

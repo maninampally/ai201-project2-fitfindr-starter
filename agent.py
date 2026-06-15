@@ -41,6 +41,7 @@ def _new_session(query: str, wardrobe: dict) -> dict:
         "outfit_suggestion": None,
         "fit_card": None,
         "error": None,
+        "retry_note": None,
     }
 
 
@@ -138,18 +139,39 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         parsed.get("max_price"),
     )
 
-    # Branch A: no results — set error and return early
+    # Branch A: no results — retry without size if size was set, else error
     if not session["search_results"]:
-        context = ""
         if parsed.get("size"):
-            context += f" in size {parsed['size']}"
-        if parsed.get("max_price") is not None:
-            context += f" under ${parsed['max_price']:.2f}"
-        session["error"] = (
-            f"No listings found for '{parsed['description']}'{context}. "
-            "Try different keywords, remove the size filter, or raise your price limit."
-        )
-        return session
+            # Retry with size filter removed
+            retry_results = search_listings(
+                parsed["description"],
+                size=None,
+                max_price=parsed.get("max_price"),
+            )
+            if retry_results:
+                session["search_results"] = retry_results
+                session["retry_note"] = (
+                    f"No results found in size {parsed['size']} — "
+                    "showing all sizes instead."
+                )
+            else:
+                context = f" in size {parsed['size']}"
+                if parsed.get("max_price") is not None:
+                    context += f" under ${parsed['max_price']:.2f}"
+                session["error"] = (
+                    f"No listings found for '{parsed['description']}'{context}. "
+                    "Try different keywords or raise your price limit."
+                )
+                return session
+        else:
+            context = ""
+            if parsed.get("max_price") is not None:
+                context += f" under ${parsed['max_price']:.2f}"
+            session["error"] = (
+                f"No listings found for '{parsed['description']}'{context}. "
+                "Try different keywords or raise your price limit."
+            )
+            return session
 
     # Branch B: results found — select top item and continue
     session["selected_item"] = session["search_results"][0]

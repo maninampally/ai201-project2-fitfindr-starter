@@ -65,7 +65,7 @@ If `outfit` is empty/whitespace: returns `"Cannot create a fit card without an o
 
 ### Additional Tools (if any)
 
-None for required features.
+None — stretch feature is retry logic (not a new tool), described in Planning Loop below.
 
 ---
 
@@ -79,8 +79,9 @@ The loop in `run_agent()` uses these exact conditional branches:
 
 2. **Call search_listings** — `search_listings(parsed["description"], parsed["size"], parsed["max_price"])`. Store result in `session["search_results"]`.
 
-3. **Branch on results:**
-   - If `session["search_results"] == []`: set `session["error"]` = descriptive message, **return session immediately**. suggest_outfit is NEVER called with empty input.
+3. **Branch on results (with retry logic — stretch feature):**
+   - If `session["search_results"] == []` AND `parsed["size"]` was set: retry `search_listings(description, size=None, max_price)`. If retry returns results, store in `session["search_results"]`, set `session["retry_note"]` = "No results in size [X] — showing all sizes instead.", proceed to Step 4.
+   - If `session["search_results"] == []` AND no size was set (or retry also empty): set `session["error"]` = descriptive message, **return session immediately**. suggest_outfit is NEVER called with empty input.
    - If non-empty: set `session["selected_item"] = session["search_results"][0]`, proceed to Step 4.
 
 4. **Call suggest_outfit** — `suggest_outfit(session["selected_item"], session["wardrobe"])`. Store in `session["outfit_suggestion"]`.

@@ -55,7 +55,9 @@ def handle_query(user_query: str, wardrobe_choice: str) -> tuple[str, str, str]:
     colors = ", ".join(item.get("colors", []))
     tags = ", ".join(item.get("style_tags", []))
     brand = item.get("brand") or "Unknown brand"
+    retry_banner = f"⚠️ {session['retry_note']}\n\n" if session.get("retry_note") else ""
     listing_text = (
+        f"{retry_banner}"
         f"{item['title']}\n\n"
         f"Price:     ${item['price']:.2f}\n"
         f"Platform:  {item['platform']}\n"
